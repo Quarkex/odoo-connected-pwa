@@ -29,7 +29,7 @@ else:
         db = conf['odoo_database']
         username = conf['odoo_username']
         password = conf['odoo_password']
-        test_module = conf['target_module']
+        test_module = conf['target_module'] + '.' + conf['target_model']
         fields = conf['fields']
 
         common = rpc.ServerProxy('{}/xmlrpc/2/common'.format(url))
