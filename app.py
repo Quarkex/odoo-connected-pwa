@@ -13,6 +13,12 @@ if conf == None:
     print("No configuration file provided.")
 else:
     app = Flask(__name__)
+    url = conf['odoo_url']
+    db = conf['odoo_database']
+    username = conf['odoo_username']
+    password = conf['odoo_password']
+    test_module = conf['target_module'] + '.' + conf['target_model']
+    fields = conf['fields']
 
     @app.route('/', methods=['GET'])
     def index():
@@ -24,13 +30,6 @@ else:
 
     @app.route('/api', methods=['POST'])
     def api_get():
-
-        url = conf['odoo_url']
-        db = conf['odoo_database']
-        username = conf['odoo_username']
-        password = conf['odoo_password']
-        test_module = conf['target_module'] + '.' + conf['target_model']
-        fields = conf['fields']
 
         common = rpc.ServerProxy('{}/xmlrpc/2/common'.format(url))
         uid = common.authenticate(db, username, password, {})
