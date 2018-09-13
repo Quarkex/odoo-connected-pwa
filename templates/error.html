@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html class="no-js" lang="en" dir="ltr">
+    <head>
+        <title></title>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Error</title>
+        <link rel="stylesheet" type="text/css" href="../static/css/foundation.css">
+        <link rel="stylesheet" type="text/css" href="../static/css/app.css">
+    </head>
+    <body>
+
+        <div><h1>Error</h1></div>
+
+        <!-- Load Zurb Foundation. -->
+        <script src="../static/js/vendor/jquery.js"></script>
+        <script src="../static/js/vendor/what-input.js"></script>
+        <script src="../static/js/vendor/foundation.js"></script>
+
+        <!-- Load React. -->
+        <!-- Note: when deploying, replace "development.js" with "production.min.js". -->
+        <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+        <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+
+        <!-- Load our React components. -->
+        <script src="../static/js/react/component.js"></script>
+
+        <!-- Load any other custom js. -->
+        <script src="../static/js/app.js"></script>
+
+        <script type="text/javascript">
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                    navigator.serviceWorker.register("../sw.js").then(function(registration) {
+                        // Registration was successful
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    }, function(err) {
+                        // registration failed :(
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+                });
+            }
+        </script>
+    </body>
+</html>
