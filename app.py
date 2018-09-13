@@ -1,6 +1,6 @@
 import yaml
 import xmlrpc.client as rpc
-from flask import Flask, render_template, url_for, jsonify
+from flask import Flask, render_template, url_for, jsonify, request
 
 with open("config.yml", 'r') as stream:
     try:
@@ -22,7 +22,7 @@ else:
     def sw():
         return app.send_static_file('sw.js')
 
-    @app.route('/api', methods=['GET'])
+    @app.route('/api', methods=['POST'])
     def api_get():
 
         url = conf['odoo_url']
@@ -43,8 +43,14 @@ else:
 
             if has_access_rights:
 
-                records = models.execute_kw(db, uid, password, test_module,
-                        'search_read', [], {'fields': fields})
+                search = request.get_json(True)['search_string']
+                if search == None:
+                    records = models.execute_kw(db, uid, password, test_module,
+                            'search_read', [], {'fields': fields})
+                else:
+                    records = models.execute_kw(db, uid, password, test_module,
+                            'search_read', [[['name', 'like', search]]], {'fields': fields})
+
 
                 # The jsonify() function in flask returns a flask.Response()
                 # object that already has the appropriate content-type header
