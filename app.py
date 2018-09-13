@@ -20,6 +20,10 @@ else:
     test_module = conf['target_module'] + '.' + conf['target_model']
     fields = conf['fields']
 
+    flask_port = conf['server_port']
+    if flask_port == None:
+        flask_port = 5000
+
     @app.route('/', methods=['GET'])
     def index():
         return render_template('index.html')
@@ -65,4 +69,4 @@ else:
         return render_template('index.html')
 
     if __name__=='__main__':
-        app.run(debug=True,host='127.0.0.1')
+        app.run(debug=True,host='127.0.0.1', port=flask_port)
