@@ -103,7 +103,7 @@ else:
 
         if uid != False: # If user hasn't successfully authenticated this will be False
 
-            target_id = request.form['target_id']
+            target_id = request.get_json(True)['target_id']
 
             models = rpc.ServerProxy('{}/xmlrpc/2/object'.format(url))
             has_access_rights = models.execute_kw(db, uid, password, test_module,
@@ -129,8 +129,8 @@ else:
 
         if uid != False: # If user hasn't successfully authenticated this will be False
 
-            target_id = request.form['target_id'].strip()
-            new_name = request.form['name'].strip()
+            target_id = request.get_json(True)['target_id']
+            new_name  = request.get_json(True)['name'].strip()
 
             models = rpc.ServerProxy('{}/xmlrpc/2/object'.format(url))
             has_access_rights = models.execute_kw(db, uid, password, test_module,
