@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import yaml
+import string
+import random
 import xmlrpc.client as rpc
 from flask import Flask, render_template, url_for, jsonify, request
 
@@ -23,6 +25,8 @@ else:
     test_module = conf['target_module'] + '.' + conf['target_model']
     fields = conf['fields']
 
+    sessions = {}
+
     flask_port = conf['server_port']
     if flask_port == None:
         flask_port = 5000
@@ -31,32 +35,44 @@ else:
     ###########################
 
     def login(username, password):
-        # TODO this should contrast with odoo and return a session token
-        return 'placeholder_token'
+        # this contrast with odoo and return a session token
+        common = rpc.ServerProxy('{}/xmlrpc/2/common'.format(url))
+        uid = common.authenticate(db, username, password, {})
+        if ( uid != False ):
+            token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(48))
+            sessions[token] = { 'uid': uid, 'password': password }
+            return token
+        else:
+            return False
 
     def isLogged(token):
-        # TODO this should contrast the session token to get the username and password
-        common = rpc.ServerProxy('{}/xmlrpc/2/common'.format(url))
-        return common.authenticate(db, username, password, {})
+        if token in sessions:
+            return { 'uid': sessions[token]['uid'], 'password': sessions[token]['password'] }
+        else:
+            return False
 
-    def isAuthorized(uid, task):
-        models = rpc.ServerProxy('{}/xmlrpc/2/object'.format(url))
-        return models.execute_kw(db, uid, password, test_module,
-                'check_access_rights', [task], {'raise_exception': False})
+    def isAuthorized(token, task):
+        user = isLogged(token)
+        if user != False:
+            models = rpc.ServerProxy('{}/xmlrpc/2/object'.format(url))
+            return models.execute_kw(db, user['uid'], user['password'], test_module,
+                    'check_access_rights', [task], {'raise_exception': False})
+        else:
+            return False
 
     def odooDo(token, task, mask, arguments=None):
         output = {}
-
-        uid = isLogged(token)
-        if uid != False: # If user hasn't successfully authenticated this will be False
-            if isAuthorized(uid, task):
-
+        user = isLogged(token)
+        if user != False:
+            if isAuthorized(token, task):
+                common = rpc.ServerProxy('{}/xmlrpc/2/object'.format(url))
                 if(arguments == None):
-                    output['result'] = rpc.ServerProxy('{}/xmlrpc/2/object'.format(url)).execute_kw(db, uid, password, test_module, task, mask)
+                    output['result'] = common.execute_kw(db, user['uid'], user['password'], test_module, task, mask)
                 else:
-                    output['result'] = rpc.ServerProxy('{}/xmlrpc/2/object'.format(url)).execute_kw(db, uid, password, test_module, task, mask, arguments)
+                    output['result'] = common.execute_kw(db, user['uid'], user['password'], test_module, task, mask, arguments)
 
                 output['status']='ok'
+
             else:
                 output['status']='unauthorized'
 
@@ -73,11 +89,21 @@ else:
     def sw():
         return app.send_static_file('sw.js')
 
+    @app.route('/api/login', methods=['POST'])
+    def api_login():
+        username = request.get_json(True)['username']
+        password = request.get_json(True)['password']
+        token = login(username, password)
+        if (token == False):
+            return jsonify({'status': 'unautenticated'})
+        else:
+            return jsonify({'status': 'ok', 'session_token': token})
+
+
     @app.route('/api/read', methods=['POST'])
     def api_read():
+        token = request.get_json(True)['session_token']
         search = request.get_json(True)['search_string']
-
-        token = login('test', 'test')
 
         if search == None:
             output = odooDo(token, 'search_read', [], {'fields': fields})
@@ -88,28 +114,25 @@ else:
 
     @app.route('/api/create', methods=['POST'])
     def api_create():
+        token = request.get_json(True)['session_token']
         new_name  = request.get_json(True)['name'].strip()
-
-        token = login('test', 'test')
 
         output = odooDo(token, 'create', [{"name": new_name}])
         return jsonify(output)
 
     @app.route('/api/delete', methods=['POST'])
     def api_delete():
+        token = request.get_json(True)['session_token']
         target_id = request.get_json(True)['target_id']
-
-        token = login('test', 'test')
 
         output = odooDo(token, 'unlink', [[int(target_id)]])
         return jsonify(output)
 
     @app.route('/api/update', methods=['POST'])
     def api_put():
+        token = request.get_json(True)['session_token']
         target_id = request.get_json(True)['target_id']
         new_name  = request.get_json(True)['name'].strip()
-
-        token = login('test', 'test')
 
         output = odooDo(token, 'write', [[target_id], {"name": new_name}])
         return jsonify(output)
