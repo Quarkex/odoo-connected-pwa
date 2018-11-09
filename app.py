@@ -62,12 +62,10 @@ else:
                 return jsonify(records)
 
             else:
-                return render_template('error.html')
+                return jsonify({'status':'unauthorized'})
 
         else:
-            return render_template('error.html')
-
-        return render_template('index.html')
+            return jsonify({'status':'error'})
 
     @app.route('/api/create', methods=['POST'])
     def api_create():
@@ -87,13 +85,12 @@ else:
                 id = models.execute_kw(db, uid, password, test_module,
                         'create', [{ 'name': new_name, }])
 
+                return jsonify({'status':'ok'})
             else:
-                return render_template('error.html')
+                return jsonify({'status':'unauthorized'})
 
         else:
-            return render_template('error.html')
-
-        return render_template('index.html')
+            return jsonify({'status':'error'})
 
     @app.route('/api/delete', methods=['POST'])
     def api_delete():
@@ -113,13 +110,12 @@ else:
                 id = models.execute_kw(db, uid, password, test_module,
                         'unlink', [[int(target_id)]])
 
+                return jsonify({'status':'ok'})
             else:
-                return render_template('error.html')
+                return jsonify({'status':'unauthorized'})
 
         else:
-            return render_template('error.html')
-
-        return render_template('index.html')
+            return jsonify({'status':'error'})
 
     @app.route('/api/update', methods=['POST'])
     def api_put():
@@ -140,13 +136,12 @@ else:
                 id = models.execute_kw(db, uid, password, test_module,
                         'write', [[target_id], {"name": new_name}])
 
+                return jsonify({'status':'ok'})
             else:
-                return render_template('error.html')
+                return jsonify({'status':'unauthorized'})
 
         else:
-            return render_template('error.html')
-
-        return render_template('index.html')
+            return jsonify({'status':'error'})
 
     if __name__=='__main__':
         app.run(debug=True,host='127.0.0.1', port=flask_port)
