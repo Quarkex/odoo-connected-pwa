@@ -2,6 +2,7 @@
 import yaml
 import string
 import random
+import time
 import xmlrpc.client as rpc
 from flask import Flask, render_template, url_for, jsonify, request
 
@@ -38,20 +39,27 @@ else:
         uid = common.authenticate(db, username, password, {})
         if ( uid != False ):
             token = ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(48))
-            sessions[token] = { 'uid': uid, 'password': password }
+            sessions[token] = { 'uid': uid, 'password': password, 'time': time.time() }
             return token
         else:
             return False
 
     def isLogged(token):
         if token in sessions:
-            return { 'uid': sessions[token]['uid'], 'password': sessions[token]['password'] }
+            # if the difference between current time and timestamp is less or
+            # equal to 30min
+            if ( (time.time() - sessions[token]['time']) <= (30 * 60) ):
+                sessions[token]['time']: time.time()
+                return { 'uid': sessions[token]['uid'], 'password': sessions[token]['password'], 'status': 'logged' }
+            else:
+                sessions.pop(token, None) # remove expired session.
+                return { 'uid': sessions[token]['uid'], 'status': 'session-expired' }
         else:
-            return False
+            return { 'status': 'no-session' }
 
     def isAuthorized(token, task):
         user = isLogged(token)
-        if user != False:
+        if user['status'] == 'logged':
             models = rpc.ServerProxy('{}/xmlrpc/2/object'.format(url))
             return models.execute_kw(db, user['uid'], user['password'], test_module,
                     'check_access_rights', [task], {'raise_exception': False})
@@ -61,7 +69,7 @@ else:
     def odooDo(token, task, mask, arguments=None):
         output = {}
         user = isLogged(token)
-        if user != False:
+        if user['status'] == 'logged':
             if isAuthorized(token, task):
                 common = rpc.ServerProxy('{}/xmlrpc/2/object'.format(url))
                 if(arguments == None):
@@ -75,7 +83,7 @@ else:
                 output['status']='unauthorized'
 
         else:
-            output['status']='error'
+            output['status']=user['status']
 
         return output
 
